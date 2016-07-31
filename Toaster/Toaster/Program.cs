@@ -6,48 +6,87 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Threading;
+using NetSockets;
 
 namespace Toaster
 {
     class Program
     {
+        public static NetObjectServer _server = null;
+
         public static void Main()
         {
-
-            while (true)
+            _server = new NetObjectServer();
+            _server.OnReceived += new NetClientReceivedEventHandler<NetObject>(OnReceived);
+            _server.OnClientConnected += (o, e) =>
             {
-                try
+                int value = new Random().Next(0, 99999);
+                guids.Add(value.ToString(), e.Guid);
+            };
+            _server.OnClientAccepted += (o, a) =>
+            {
+                _server.DispatchTo(a.Guid, new NetObject("400", GetLocalId(a.Guid)));
+            };
+            _server.Start(13370);
+            Console.WriteLine($"Server started. IP: {_server.Address} : {_server.Port}");
+        }
+
+        public static string GetLocalId(Guid guid)
+        {
+            foreach(var g in guids)
+            {
+                if (g.Value == guid)
+                    return g.Key;
+            }
+            return "";
+        }
+
+        public static Dictionary<string, Guid> guids = new Dictionary<string, Guid>();
+
+        private static void OnReceived(object sender, NetClientReceivedEventArgs<NetObject> e)
+        {
+            try
+            {
+                var header = e.Data.Name.Split(' ');
+                string replyto = header[0];
+                int statcode = Convert.ToInt32(header[1]);
+                switch(statcode)
                 {
-                    IPAddress ipAd = IPAddress.Parse("0.0.0.0");
-                    // use local m/c IP address, and 
-                    // use the same in the client
-
-                    /* Initializes the Listener */
-                    TcpListener myList = new TcpListener(ipAd, 13370);
-
-                    /* Start Listeneting at the specified port */
-                    myList.Start();
-
-                    Console.WriteLine("The local End point is: " +
-                                      myList.LocalEndpoint);
-                    Console.WriteLine("Waiting for a connection...");
-
-                    Socket s = myList.AcceptSocket();
-                    Console.WriteLine("Connection accepted from " + s.RemoteEndPoint);
-                    ASCIIEncoding asen = new ASCIIEncoding();
-
-                    s.Send(File.ReadAllBytes("default.md"));
-                    s.Send(new byte[] { 4 });
-
-                    /* clean up */
-                    s.Close();
-                    myList.Stop();
-
+                    case 102:
+                        bool nf = false;
+                        string file_req = e.Data.Object as string;
+                        file_req = file_req.Replace("/", "\\");
+                        if (file_req.EndsWith(".md"))
+                        {
+                            if (File.Exists("wwl" + file_req))
+                            {
+                                _server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req)));
+                            }
+                            else
+                            {
+                                nf = true;
+                            }
+                        }
+                        else
+                        {
+                            if (File.Exists("www" + file_req))
+                            {
+                                _server.DispatchTo(guids[replyto], new NetObject("101", File.ReadAllText("wwl" + file_req)));
+                            }
+                            else
+                            {
+                                nf = true;
+                            }
+                        }
+                        if (nf == true)
+                            _server.DispatchTo(guids[replyto], new NetObject("201", null));
+                        break;
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error! " + e.StackTrace);
-                }
+            }
+            catch
+            {
+                _server.DispatchAll(new NetObject("300", null));
             }
         }
     }
