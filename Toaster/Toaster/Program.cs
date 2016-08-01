@@ -21,7 +21,6 @@ namespace Toaster
             _server.OnReceived += new NetClientReceivedEventHandler<NetObject>(OnReceived);
             _server.OnClientConnected += (o, e) =>
             {
-                Console.WriteLine("Client connected.");
                 int value = new Random().Next(0, 99999);
                 guids.Add(value.ToString(), e.Guid);
                 e.Reject = false;
