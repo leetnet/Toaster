@@ -21,8 +21,10 @@ namespace Toaster
             _server.OnReceived += new NetClientReceivedEventHandler<NetObject>(OnReceived);
             _server.OnClientConnected += (o, e) =>
             {
+                Console.WriteLine("Client connected.");
                 int value = new Random().Next(0, 99999);
                 guids.Add(value.ToString(), e.Guid);
+                e.Reject = false;
             };
             _server.OnClientAccepted += (o, a) =>
             {
@@ -68,9 +70,20 @@ namespace Toaster
                                 nf = true;
                             }
                         }
+                        else if(Directory.Exists("wwl" + file_req))
+                        {
+                            if(File.Exists("wwl" + file_req + "\\index.md"))
+                            {
+                                _server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req + "\\index.md")));
+                            }
+                            else
+                            {
+                                nf = true;
+                            }
+                        }
                         else
                         {
-                            if (File.Exists("www" + file_req))
+                            if (File.Exists("wwl" + file_req))
                             {
                                 _server.DispatchTo(guids[replyto], new NetObject("101", File.ReadAllText("wwl" + file_req)));
                             }
