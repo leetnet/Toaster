@@ -14,7 +14,7 @@ namespace Toaster
     class Program
     {
         public static NetObjectServer _server = null;
-
+        public static IPAddress Thingip = IPAddress.Parse("0.0.0.0");
         public static void Main()
         {
             _server = new NetObjectServer();
@@ -25,12 +25,13 @@ namespace Toaster
                 int value = new Random().Next(0, 99999);
                 guids.Add(value.ToString(), e.Guid);
                 e.Reject = false;
+                Console.WriteLine("Client Connected");
             };
             _server.OnClientAccepted += (o, a) =>
             {
                 _server.DispatchTo(a.Guid, new NetObject("400", GetLocalId(a.Guid)));
             };
-            _server.Start(13370);
+            _server.Start(Thingip, 13370);
             Console.WriteLine($"Server started. IP: {_server.Address} : {_server.Port}");
         }
 
