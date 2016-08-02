@@ -19,6 +19,21 @@ namespace Toaster
 		 * Copyright 2016 Carver Harrison
 		 * By: Carver, William and Michael
 		*/
+
+            public static string DirSep
+        {
+            get
+            {
+                switch(Environment.OSVersion.Platform)
+                {
+                    case PlatformID.Win32Windows:
+                        return "\\";
+                    default:
+                        return "/";
+                }
+            }
+        }
+
 		public static NetObjectServer _server = null;
         public static IPAddress Thingip = IPAddress.Parse("0.0.0.0");
         public static void Main()
@@ -71,7 +86,7 @@ namespace Toaster
                     case 102:
                         bool nf = false;
                         string file_req = e.Data.Object as string;
-                        file_req = file_req.Replace("/", "\\");
+                        file_req = file_req.Replace("/", DirSep);
                         if (file_req.EndsWith(".md"))
                         {
                             if (File.Exists("wwl" + file_req))
@@ -85,9 +100,9 @@ namespace Toaster
                         }
                         else if(Directory.Exists("wwl" + file_req))
                         {
-                            if(File.Exists("wwl" + file_req + "\\index.md"))
+                            if(File.Exists("wwl" + file_req.Replace("/", DirSep) + $"{DirSep}index.md"))
                             {
-                                _server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req + "\\index.md")));
+                                _server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req.Replace("/", DirSep) + $"{DirSep}index.md")));
                             }
                             else
                             {
