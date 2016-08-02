@@ -8,30 +8,43 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Threading;
 using NetSockets;
-
+using NLua;
 namespace Toaster
 {
     class Program
     {
-        public static NetObjectServer _server = null;
+		/*
+		 * Toaster
+		 * Version 1.3
+		 * Copyright 2016 Carver Harrison
+		 * By: Carver, William and Michael
+		*/
+		public static NetObjectServer _server = null;
         public static IPAddress Thingip = IPAddress.Parse("0.0.0.0");
         public static void Main()
         {
-            _server = new NetObjectServer();
-            _server.OnReceived += new NetClientReceivedEventHandler<NetObject>(OnReceived);
-            _server.OnClientConnected += (o, e) =>
-            {
-                int value = new Random().Next(0, 99999);
-                guids.Add(value.ToString(), e.Guid);
-                e.Reject = false;
-                Console.WriteLine("Client Connected");
-            };
-            _server.OnClientAccepted += (o, a) =>
-            {
-                _server.DispatchTo(a.Guid, new NetObject("400", GetLocalId(a.Guid)));
-            };
-            _server.Start(Thingip, 13370);
-            Console.WriteLine($"Server started. IP: {_server.Address} : {_server.Port}");
+			try
+			{
+				_server = new NetObjectServer();
+				_server.OnReceived += new NetClientReceivedEventHandler<NetObject>(OnReceived);
+				_server.OnClientConnected += (o, e) =>
+				{
+					int value = new Random().Next(0, 99999);
+					guids.Add(value.ToString(), e.Guid);
+					e.Reject = false;
+					Console.WriteLine("Client Connected");
+				};
+				_server.OnClientAccepted += (o, a) =>
+				{
+					_server.DispatchTo(a.Guid, new NetObject("400", GetLocalId(a.Guid)));
+				};
+				_server.Start(Thingip, 13370);
+				Console.WriteLine($"Server started. IP: {_server.Address} : {_server.Port}");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("[Error] " + ex);
+			}
         }
 
         public static string GetLocalId(Guid guid)
@@ -63,7 +76,7 @@ namespace Toaster
                         {
                             if (File.Exists("wwl" + file_req))
                             {
-                                _server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req)));
+								_server.DispatchTo(guids[replyto], new NetObject("100", File.ReadAllText("wwl" + file_req)));
                             }
                             else
                             {
@@ -78,7 +91,12 @@ namespace Toaster
                             }
                             else
                             {
-                                nf = true;
+								string data = "# Directory of " + file_req.Split("ltp://".ToCharArray())[1] + "\n";
+								foreach (string file in Directory.GetFiles(file_req))
+								{
+									data += $"- [ltp://{Thingip}/{file}]({file_req.Split("ltp://".ToCharArray())[1]})\n";
+								}
+								_server.DispatchTo(guids[replyto], new NetObject("100", data));
                             }
                         }
                         else
